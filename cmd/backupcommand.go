@@ -17,8 +17,8 @@ package main
 
 import (
 	"bytes"
-	"github.com/crunchydata/crunchy-postgresql-manager/backup"
-	"github.com/crunchydata/crunchy-postgresql-manager/logit"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/backup"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
 	"io"
 	"log"
 	"os"

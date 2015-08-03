@@ -17,7 +17,7 @@ package sec
 
 import (
 	"database/sql"
-	"github.com/crunchydata/crunchy-postgresql-manager/logit"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
 )
 
 //this is a place holder for any future security implementations

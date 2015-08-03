@@ -3,7 +3,7 @@ package cpmcontainerapi
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/crunchydata/crunchy-postgresql-manager/logit"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
 	"io/ioutil"
 	"net/http"
 )

@@ -16,8 +16,8 @@
 package main
 
 import (
-	"github.com/crunchydata/crunchy-postgresql-manager/backup"
-	"github.com/crunchydata/crunchy-postgresql-manager/logit"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/backup"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
 	"net"
 	"net/http"
 	"net/rpc"

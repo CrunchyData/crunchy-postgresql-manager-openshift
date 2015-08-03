@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/crunchydata/crunchy-postgresql-manager/cpmserverapi"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/cpmserverapi"
 )
 
 type Person struct {

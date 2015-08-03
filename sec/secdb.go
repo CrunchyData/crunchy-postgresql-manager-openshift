@@ -18,7 +18,7 @@ package sec
 import (
 	"database/sql"
 	"fmt"
-	"github.com/crunchydata/crunchy-postgresql-manager/logit"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
 )
 
 func DBGetUser(dbConn *sql.DB, Name string) (User, error) {

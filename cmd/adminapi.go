@@ -19,7 +19,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/ant0ine/go-json-rest/rest"
-	"github.com/crunchydata/crunchy-postgresql-manager/adminapi"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/adminapi"
 	"log"
 	"net/http"
 )
