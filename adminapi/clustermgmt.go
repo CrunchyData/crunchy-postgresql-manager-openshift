@@ -34,6 +34,8 @@ import (
 
 const (
 	STANDBY = "standby"
+	CPM_NODE_IMAGE = "cpm-node-os"
+	CPM_PGPOOL_IMAGE = "cpm-pgpool-os"
 )
 
 type AutoClusterInfo struct {
@@ -90,7 +92,7 @@ func ScaleUpCluster(w rest.ResponseWriter, r *rest.Request) {
 
 	//provision new container
 	params := new(cpmserverapi.DockerRunRequest)
-	params.Image = "cpm-node"
+	params.Image = CPM_NODE_IMAGE
 	//TODO make the server choice smart
 	params.ServerID = containers[0].ServerID
 	params.ProjectID = cluster.ProjectID
@@ -895,7 +897,7 @@ func EventJoinCluster(w rest.ResponseWriter, r *rest.Request) {
 
 			//update the node to be in the cluster
 			origDBNode.ClusterID = ClusterID
-			if origDBNode.Image == "cpm-node" {
+			if origDBNode.Image == CPM_NODE_IMAGE  {
 				origDBNode.Role = STANDBY
 			} else {
 				origDBNode.Role = "pgpool"
@@ -1028,7 +1030,7 @@ func AutoCluster(w rest.ResponseWriter, r *rest.Request) {
 
 	//create master container
 	dockermaster := cpmserverapi.DockerRunRequest{}
-	dockermaster.Image = "cpm-node"
+	dockermaster.Image = CPM_NODE_IMAGE
 	dockermaster.ContainerName = params.Name + "-master"
 	dockermaster.ServerID = masterServer.ID
 	dockermaster.ProjectID = params.ProjectID
@@ -1081,7 +1083,7 @@ func AutoCluster(w rest.ResponseWriter, r *rest.Request) {
 		//	loop - provision standby
 		dockerstandby[i].ServerID = chosenServers[i].ID
 		dockerstandby[i].ProjectID = params.ProjectID
-		dockerstandby[i].Image = "cpm-node"
+		dockerstandby[i].Image = CPM_NODE_IMAGE
 		dockerstandby[i].ContainerName = params.Name + "-" + STANDBY + "-" + strconv.Itoa(i)
 		dockerstandby[i].Standalone = "false"
 		err2 = provisionImpl(dbConn, &dockerstandby[i], profile.StandbyProfile, true)
@@ -1113,7 +1115,7 @@ func AutoCluster(w rest.ResponseWriter, r *rest.Request) {
 	//	provision
 	dockerpgpool := cpmserverapi.DockerRunRequest{}
 	dockerpgpool.ContainerName = params.Name + "-pgpool"
-	dockerpgpool.Image = "cpm-pgpool"
+	dockerpgpool.Image = CPM_PGPOOL_IMAGE
 	dockerpgpool.ServerID = chosenServers[count].ID
 	dockerpgpool.ProjectID = params.ProjectID
 	dockerpgpool.Standalone = "false"

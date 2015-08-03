@@ -22,6 +22,8 @@ env > /tmp/envvars.out
 
 source /var/cpm/bin/setenv.sh
 
+mkdir -p $PGDATA
+
 start-pg-wrapper-admin.sh &
 export KUBE_URL=$KUBE_URL
 

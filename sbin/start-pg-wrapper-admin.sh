@@ -28,9 +28,9 @@ HBA=/var/cpm/conf/admin/pg_hba.conf
 #
 # the initial start of postgres will create the clusteradmin database
 #
-if [ ! -f /pgdata/postgresql.conf ]; then
+if [ ! -f $PGDATA/postgresql.conf ]; then
         echo "pgdata is empty"
-        initdb -D /pgdata  > /tmp/initdb.log &> /tmp/initdb.err
+        initdb -D $PGDATA  > /tmp/initdb.log &> /tmp/initdb.err
         echo "setting domain to " $THISDOMAIN >> /tmp/start-db.log
 
         cp $HBA /tmp
@@ -42,7 +42,7 @@ if [ ! -f /pgdata/postgresql.conf ]; then
         cp /var/cpm/conf/admin/postgresql.conf /pgdata/
         echo "starting db" >> /tmp/start-db.log
 
-        pg_ctl -D /pgdata start
+        pg_ctl -D $PGDATA start
         sleep 3
         echo "building clusteradmin db" >> /tmp/start-db.log
         psql -U postgres < /var/cpm/bin/setup.sql
@@ -57,5 +57,5 @@ rm /pgdata/postmaster.pid
 #
 # the normal startup of pg
 #
-pg_ctl -D /pgdata start 
+pg_ctl -D $PGDATA start 
 
