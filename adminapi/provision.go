@@ -22,6 +22,7 @@ import (
 	"github.com/crunchydata/crunchy-postgresql-manager-openshift/admindb"
 	"github.com/crunchydata/crunchy-postgresql-manager-openshift/cpmcontainerapi"
 	"github.com/crunchydata/crunchy-postgresql-manager-openshift/cpmserverapi"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/kubeclient"
 	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
 	"github.com/crunchydata/crunchy-postgresql-manager-openshift/template"
 	"github.com/crunchydata/crunchy-postgresql-manager-openshift/util"
@@ -126,10 +127,10 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 
 	var errorStr string
 	//make sure the container name is not already taken
-	_, err2 := admindb.GetContainerByName(dbConn, params.ContainerName)
-	if err2 != nil {
-		if err2 != sql.ErrNoRows {
-			return err2
+	_, err := admindb.GetContainerByName(dbConn, params.ContainerName)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return err
 		}
 	} else {
 		errorStr = "container name" + params.ContainerName + " already used can't provision"
@@ -137,75 +138,84 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 		return errors.New(errorStr)
 	}
 
-	//go get the IPAddress
-	server, err := admindb.GetServer(dbConn, params.ServerID)
-	if err != nil {
-		logit.Error.Println("Provision:" + err.Error())
-		return err
-	}
-
-	logit.Info.Println("provisioning on server " + server.IPAddress)
-
-	//for database nodes, on the target server, we need to allocate
-	//a disk volume for the /pgdata container volume to work with
-	//this causes a volume to be created with the directory
-	//named the same as the container name
-
-	var responseStr string
-
-	params.PGDataPath = server.PGDataPath + "/" + params.ContainerName
-
-	logit.Info.Println("PROFILE provisionImpl 2 about to provision volume")
-	if params.Image != "cpm-pgpool" {
-		preq := &cpmserverapi.DiskProvisionRequest{}
-		preq.Path = params.PGDataPath
-		var url = "http://" + server.IPAddress + ":10001"
-		_, err = cpmserverapi.DiskProvisionClient(url, preq)
-		if err != nil {
-			logit.Error.Println("Provision: problem in provisionvolume call" + err.Error())
-			return err
-		}
-		logit.Info.Println("Provision: provisionvolume call response=" + responseStr)
-	}
-	logit.Info.Println("PROFILE provisionImpl 3 provision volume completed")
-
-	//run docker run to create the container
+	//create the container by constructing a template and calling openshift
 
 	params.CPU, params.MEM, err = getDockerResourceSettings(dbConn, PROFILE)
 	if err != nil {
 		logit.Error.Println("Provision: problem in getting profiles call" + err.Error())
 		return err
 	}
-	/*
-		var pgport admindb.Setting
-		pgport, err = admindb.GetSetting(dbConn, "PG-PORT")
-		if err != nil {
-			logit.Error.Println("Provision:PG-PORT setting error " + err.Error())
-			return err
-		}
-	*/
 
-	var output string
+	//remove any existing pods and services with this name
+	err = kubeclient.DeletePod(KubeURL, params.ContainerName)
+	logit.Info.Println("after delete pod")
+	if err != nil {
+		logit.Info.Println("Provision:" + err.Error())
+	}
 
-	//remove any existing docker containers with this name
-	logit.Info.Println("PROFILE provisionImpl remove old container start")
-	rreq := &cpmserverapi.DockerRemoveRequest{}
-	rreq.ContainerName = params.ContainerName
-	var url = "http://" + server.IPAddress + ":10001"
-	_, err = cpmserverapi.DockerRemoveClient(url, rreq)
+	err = kubeclient.DeleteService(KubeURL, params.ContainerName)
+	if err != nil {
+		logit.Info.Println("Provision:" + err.Error())
+	}
+
+	err = kubeclient.DeleteService(KubeURL, params.ContainerName+"-db")
+	if err != nil {
+		logit.Info.Println("Provision:" + err.Error())
+	}
+
+	podInfo := template.KubePodParams{
+		ID:                   params.ContainerName,
+		PODID:                params.ContainerName,
+		CPU:                  params.CPU,
+		MEM:                  params.MEM,
+		IMAGE:                params.Image,
+		VOLUME:               params.PGDataPath,
+		PORT:                 "13000",
+		BACKUP_NAME:          "",
+		BACKUP_SERVERNAME:    "",
+		BACKUP_SERVERIP:      "",
+		BACKUP_SCHEDULEID:    "",
+		BACKUP_PROFILENAME:   "",
+		BACKUP_CONTAINERNAME: "",
+		BACKUP_PATH:          "",
+		BACKUP_HOST:          "",
+		BACKUP_PORT:          "",
+		BACKUP_USER:          "",
+		BACKUP_SERVER_URL:    "",
+	}
+
+	err = kubeclient.CreatePod(KubeURL, podInfo)
 	if err != nil {
 		logit.Error.Println("Provision:" + err.Error())
 		return err
 	}
-	logit.Info.Println("PROFILE provisionImpl remove old container end")
-	params.CommandPath = "docker-run.sh"
-	_, err = cpmserverapi.DockerRunClient(url, params)
+
+	//create the service to the admin port 13000
+	err = kubeclient.CreateService(KubeURL, podInfo)
 	if err != nil {
-		logit.Error.Println("Provision: " + output)
+		logit.Error.Println("Provision:" + err.Error())
 		return err
 	}
-	logit.Info.Println("docker-run.sh output=" + output)
-	logit.Info.Println("PROFILE provisionImpl end of docker-run")
+
+	var pgport admindb.Setting
+	pgport, err = admindb.GetSetting(dbConn, "PG-PORT")
+	if err != nil {
+		logit.Error.Println("Provision:PG-PORT setting error " + err.Error())
+		return err
+	}
+
+	//create the service to the PG port
+	podInfo.PORT = pgport.Value
+	podInfo.ID = podInfo.ID + "-db"
+	err = kubeclient.CreateService(KubeURL, podInfo)
+	if err != nil {
+		logit.Error.Println("Provision:" + err.Error())
+		return err
+	}
+	//we have to wait here since the Kube sometimes
+	//is not that fast in setting up the service
+	//for a pod..choosing 10 seconds to wait
+	time.Sleep(10000 * time.Millisecond)
 
 	dbnode := admindb.Container{}
 	dbnode.ID = ""

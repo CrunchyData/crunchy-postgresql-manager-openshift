@@ -1,0 +1,72 @@
+{
+    "kind": "DeploymentConfig",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "{{.NAME}}",
+        "creationTimestamp": null
+    },
+    "spec": {
+        "strategy": {
+            "type": "Recreate",
+            "resources": {}
+        },
+        "triggers": [{
+            "type": "ConfigChange"
+        }],
+        "replicas": 1,
+        "selector": {
+            "name": "{{.NAME}}"
+        },
+        "template": {
+            "metadata": {
+                "creationTimestamp": null,
+                "labels": {
+                    "name": "{{.NAME}}"
+                }
+            },
+            "spec": {
+                "containers": [{
+                    "name": "server",
+                    "image": "{{.IMAGE}}",
+                    "ports": [{
+                        "containerPort": {{.PORT}},
+                        "protocol": "TCP"
+                    }],
+                    "env": [{
+                        "name": "PG_MASTER_HOST",
+                        "value": "{{.MASTER_HOST}}"
+                    }, {
+                        "name": "PG_MODE",
+                        "value": "slave"
+                    }, {
+                        "name": "PG_MASTER_USER",
+                        "value": "{{.PG_MASTER_USER}}"
+                    }, {
+                        "name": "PG_MASTER_PASSWORD",
+                        "value": "{{.PG_MASTER_PASSWORD}}"
+                    }],
+                    "resources": {},
+                    "terminationMessagePath": "/dev/termination-log",
+                    "imagePullPolicy": "IfNotPresent",
+                    "securityContext": {
+                        "capabilities": {},
+                        "privileged": false
+                    },
+                    "volumeMounts": [{
+                        "mountPath": "/pgdata",
+                        "name": "pgdata",
+                        "readOnly": false
+                    }]
+
+                }],
+                "volumes": [{
+                    "name": "pgdata",
+                    "emptyDir": {}
+                }],
+
+                "restartPolicy": "Always",
+                "dnsPolicy": "ClusterFirst"
+            }
+        }
+    }
+}

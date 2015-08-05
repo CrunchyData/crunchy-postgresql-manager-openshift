@@ -2,10 +2,11 @@
 build:
 		rm -rf bin
 		mkdir bin
+		cp ../../sbin/setenv.sh ./bin
 		cp ../../sbin/start-cpmcontainerapi.sh ./bin
 		cp ../../sbin/fail-over.sh ./bin
 		cp ../../../../../../bin/cpmcontainerapi ./bin
 		cp ../../../../../../bin/dummyserver ./bin
-	        sudo docker build -t cpm-node .
-		sudo docker tag -f cpm-node:latest crunchydata/cpm-node
+	        sudo docker build -t cpm-node-os .
+		sudo docker tag -f cpm-node-os:latest crunchydata/cpm-node-os
 
