@@ -48,8 +48,8 @@
         "spec": {
             "ports": [{
                 "protocol": "TCP",
-                "port": 5432,
-                "targetPort": 5432,
+                "port": 13001,
+                "targetPort": 13001,
                 "nodePort": 0
             }],
             "selector": {
@@ -99,6 +99,9 @@
                         }, {
                             "name": "DB_HOST",
                             "value": "127.0.0.1"
+                        }, {
+                            "name": "OPENSHIFT_URL",
+                            "value": "https://192.168.0.107:8443"
                         }, {
                             "name": "PG_DATABASE",
                             "value": "${PG_DATABASE}"

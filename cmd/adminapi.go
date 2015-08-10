@@ -22,6 +22,7 @@ import (
 	"github.com/crunchydata/crunchy-postgresql-manager-openshift/adminapi"
 	"log"
 	"net/http"
+	"os"
 )
 
 func init() {
@@ -30,10 +31,17 @@ func init() {
 
 }
 
+var OPENSHIFT string
 var CPMDIR = "/var/cpm/"
 var CPMBIN = CPMDIR + "bin/"
 
 func main() {
+
+	OPENSHIFT = os.Getenv("OPENSHIFT_URL")
+	if OPENSHIFT == "" {
+		log.Fatal("OPENSHIFT_URL env var not set\n")
+		return
+	}
 
 	fmt.Println("at top of adminapi main")
 

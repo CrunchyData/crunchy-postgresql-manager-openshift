@@ -16,10 +16,8 @@
 package kubeclient
 
 import (
-	"bytes"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/json"
 	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
 	"github.com/crunchydata/crunchy-postgresql-manager-openshift/template"
 	"io/ioutil"
@@ -74,12 +72,15 @@ func getHttpClient() (*http.Client, error) {
 func DeleteService(kubeURL string, ID string) error {
 	logit.Info.Println("deleting service " + ID)
 
+	/**
 	client, err := getHttpClient()
 	if err != nil {
 		logit.Error.Println(err.Error())
 		return err
 	}
+	*/
 
+	/**
 	// DELETE service
 	var url = kubeURL + "/api/v1/services/" + ID
 	logit.Info.Println("url is " + url)
@@ -103,6 +104,7 @@ func DeleteService(kubeURL string, ID string) error {
 		return err3
 	}
 	logit.Info.Println(string(data))
+	*/
 
 	return nil
 }
@@ -114,13 +116,16 @@ func DeleteService(kubeURL string, ID string) error {
 func DeletePod(kubeURL string, ID string) error {
 	logit.Info.Println("deleting pod " + ID)
 
+	/**
 	client, err4 := getHttpClient()
 	if err4 != nil {
 		logit.Error.Println(err4.Error())
 		return err4
 	}
+	*/
 
 	// DELETE pod
+	/**
 	var url = kubeURL + "/api/v1/pods/" + ID
 	logit.Info.Println("url is " + url)
 	request, err2 := http.NewRequest("DELETE", url, nil)
@@ -143,6 +148,7 @@ func DeletePod(kubeURL string, ID string) error {
 		return err2
 	}
 	logit.Info.Println(string(data))
+	*/
 
 	return nil
 }
@@ -152,7 +158,7 @@ func DeletePod(kubeURL string, ID string) error {
 // podInfo - the params used to configure the pod
 // return an error if anything goes wrong
 func CreatePod(kubeURL string, podInfo template.KubePodParams) error {
-	client, err := getHttpClient()
+	//client, err := getHttpClient()
 
 	logit.Info.Println("creating pod " + podInfo.ID)
 
@@ -164,25 +170,27 @@ func CreatePod(kubeURL string, podInfo template.KubePodParams) error {
 	}
 	logit.Info.Println(string(data[:]))
 
-	var bodyType = "application/json"
-	var url = kubeURL + "/api/v1/pods"
-	logit.Info.Println("url is " + url)
+	//var bodyType = "application/json"
+	//var url = kubeURL + "/api/v1/pods"
+	//logit.Info.Println("url is " + url)
 
 	// POST POD
-	resp, err := client.Post(url, bodyType, bytes.NewReader(data))
-	if err != nil {
-		logit.Error.Println(err.Error())
-		return err
-	}
-	defer resp.Body.Close()
+	/*
+		resp, err := client.Post(url, bodyType, bytes.NewReader(data))
+		if err != nil {
+			logit.Error.Println(err.Error())
+			return err
+		}
+		defer resp.Body.Close()
 
-	// Dump response
-	data, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		logit.Error.Println(err.Error())
-		return err
-	}
-	logit.Info.Println(string(data))
+		// Dump response
+		data, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			logit.Error.Println(err.Error())
+			return err
+		}
+		logit.Info.Println(string(data))
+	*/
 
 	return nil
 
@@ -195,11 +203,13 @@ func CreatePod(kubeURL string, podInfo template.KubePodParams) error {
 func GetPods(kubeURL string, podInfo template.KubePodParams) error {
 	logit.Info.Println("creating pod " + podInfo.ID)
 
+	/**
 	client, err := getHttpClient()
 	if err != nil {
 		logit.Error.Println(err.Error())
 		return err
 	}
+	*/
 
 	//use a pod template to build the pod definition
 	data, err := template.KubeNodePod(podInfo)
@@ -211,38 +221,40 @@ func GetPods(kubeURL string, podInfo template.KubePodParams) error {
 	logit.Info.Println(string(data[:]))
 
 	// Do GET something
-	resp, err2 := client.Get(kubeURL + "/api/v1/pods")
-	if err2 != nil {
-		logit.Error.Println(err2.Error())
-		return err2
+	/**
+		resp, err2 := client.Get(kubeURL + "/api/v1/pods")
+		if err2 != nil {
+			logit.Error.Println(err2.Error())
+			return err2
+		}
+		defer resp.Body.Close()
+
+		// Dump response
+		data, err3 := ioutil.ReadAll(resp.Body)
+		if err3 != nil {
+			logit.Error.Println(err3.Error())
+			return err3
+		}
+		logit.Info.Println(string(data))
+
+		return nil
 	}
-	defer resp.Body.Close()
 
-	// Dump response
-	data, err3 := ioutil.ReadAll(resp.Body)
-	if err3 != nil {
-		logit.Error.Println(err3.Error())
-		return err3
-	}
-	logit.Info.Println(string(data))
+	// GetPod gets information about a single pod from kube
+	// kubeURL - the URL to the kube
+	// podName - the pod name
+	// return an error if anything goes wrong
+	func GetPod(kubeURL string, podName string) (MyPod, error) {
+		var podInfo MyPod
 
-	return nil
-}
+		logit.Info.Println("getting pod info " + podName)
 
-// GetPod gets information about a single pod from kube
-// kubeURL - the URL to the kube
-// podName - the pod name
-// return an error if anything goes wrong
-func GetPod(kubeURL string, podName string) (MyPod, error) {
-	var podInfo MyPod
-
-	logit.Info.Println("getting pod info " + podName)
-
-	client, err := getHttpClient()
-	if err != nil {
-		logit.Error.Println(err.Error())
-		return podInfo, err
-	}
+		/**
+		client, err := getHttpClient()
+		if err != nil {
+			logit.Error.Println(err.Error())
+			return podInfo, err
+		}
 
 	// Do GET something
 	resp, err2 := client.Get(kubeURL + "/api/v1/pods/" + podName)
@@ -265,28 +277,28 @@ func GetPod(kubeURL string, podName string) (MyPod, error) {
 		return podInfo, err2
 	}
 
-	return podInfo, nil
+	*/
+	return nil
 }
 
 // CreateService creates a service
 // kubeURL - the URL to the kube
 // podName - the pod name
 // return an error if anything goes wrong
-func CreateService(kubeURL string, podInfo template.KubePodParams) error {
+func CreateService(kubeURL string, serviceInfo template.KubeServiceParams) error {
 	var s1data []byte
 	var err error
-	var serviceurl = kubeURL + "/api/v1/services"
-	var bodyType = "application/json"
 
 	logit.Info.Println("create service called")
-
+	/**
 	client, err := getHttpClient()
 	if err != nil {
 		logit.Error.Println(err.Error())
 		return err
 	}
+	*/
 
-	s1data, err = template.KubeNodeService(podInfo)
+	s1data, err = template.KubeNodeService(serviceInfo)
 	if err != nil {
 		logit.Error.Println("CreateService:" + err.Error())
 		return err
@@ -294,6 +306,7 @@ func CreateService(kubeURL string, podInfo template.KubePodParams) error {
 	logit.Info.Println("create service request...")
 	logit.Info.Println(string(s1data[:]))
 
+	/**
 	// POST admin SERVICE at port 13000
 	resp1, err1 := client.Post(serviceurl, bodyType, bytes.NewReader(s1data))
 	if err1 != nil {
@@ -309,6 +322,6 @@ func CreateService(kubeURL string, podInfo template.KubePodParams) error {
 		return err4
 	}
 	logit.Info.Println("create service response..." + string(data))
-
+	*/
 	return nil
 }

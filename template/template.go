@@ -62,6 +62,11 @@ type KubePodParams struct {
 	BACKUP_SERVER_URL    string
 }
 
+type KubeServiceParams struct {
+	NAME string
+	PORT string
+}
+
 type Rule struct {
 	Type     string
 	Database string
@@ -394,7 +399,7 @@ func KubeNodePod(info KubePodParams) ([]byte, error) {
 	return buff.Bytes(), nil
 }
 
-func KubeNodeService(info KubePodParams) ([]byte, error) {
+func KubeNodeService(info KubeServiceParams) ([]byte, error) {
 
 	var path string
 	path = util.GetBase() + "/conf/" + "service-template.json"

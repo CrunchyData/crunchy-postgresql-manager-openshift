@@ -16,20 +16,36 @@
 package adminapi
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
 	"github.com/ant0ine/go-json-rest/rest"
 	"github.com/crunchydata/crunchy-postgresql-manager-openshift/admindb"
 	"github.com/crunchydata/crunchy-postgresql-manager-openshift/cpmcontainerapi"
 	"github.com/crunchydata/crunchy-postgresql-manager-openshift/cpmserverapi"
-	"github.com/crunchydata/crunchy-postgresql-manager-openshift/kubeclient"
 	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
 	"github.com/crunchydata/crunchy-postgresql-manager-openshift/template"
 	"github.com/crunchydata/crunchy-postgresql-manager-openshift/util"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
+	"os/exec"
 	"strconv"
 	"time"
 )
+
+var OPENSHIFT_URL string
+
+func init() {
+	OPENSHIFT_URL = os.Getenv("OPENSHIFT_URL")
+	if OPENSHIFT_URL == "" {
+		log.Fatal("OPENSHIFT_URL env var not set")
+	}
+
+	logit.Info.Println("OPENSHIFT url " + OPENSHIFT_URL)
+
+}
 
 //docker run
 //TODO:  convert this to POST
@@ -147,18 +163,18 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 	}
 
 	//remove any existing pods and services with this name
-	err = kubeclient.DeletePod(KubeURL, params.ContainerName)
-	logit.Info.Println("after delete pod")
+	var username = "test"
+	var password = "test"
+	var objectName = params.ContainerName + "-admin"
+	var objectType = "pod"
+
+	err = OpenshiftDelete(username, password, objectName, objectType)
 	if err != nil {
 		logit.Info.Println("Provision:" + err.Error())
 	}
 
-	err = kubeclient.DeleteService(KubeURL, params.ContainerName)
-	if err != nil {
-		logit.Info.Println("Provision:" + err.Error())
-	}
-
-	err = kubeclient.DeleteService(KubeURL, params.ContainerName+"-db")
+	objectName = params.ContainerName + "-db"
+	err = OpenshiftDelete(username, password, objectName, objectType)
 	if err != nil {
 		logit.Info.Println("Provision:" + err.Error())
 	}
@@ -184,17 +200,60 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 		BACKUP_SERVER_URL:    "",
 	}
 
-	err = kubeclient.CreatePod(KubeURL, podInfo)
+	//generate the pod template
+	var data []byte
+	data, err = template.KubeNodePod(podInfo)
 	if err != nil {
 		logit.Error.Println("Provision:" + err.Error())
 		return err
 	}
 
-	//create the service to the admin port 13000
-	err = kubeclient.CreateService(KubeURL, podInfo)
+	//create the pod
+	file, err := ioutil.TempFile("/tmp", "openshift-template")
 	if err != nil {
 		logit.Error.Println("Provision:" + err.Error())
 		return err
+	}
+	defer os.Remove(file.Name())
+	err = ioutil.WriteFile(file.Name(), data, 0644)
+	if err != nil {
+		logit.Error.Println("Provision:" + err.Error())
+		return err
+	}
+
+	err = OpenshiftCreate(username, password, file.Name())
+	if err != nil {
+		logit.Info.Println("Provision:" + err.Error())
+	}
+
+	//generate the admin service template
+	serviceInfo := template.KubeServiceParams{
+		NAME: params.ContainerName + "-admin",
+		PORT: "13000",
+	}
+
+	//create the admin service template
+	data, err = template.KubeNodeService(serviceInfo)
+	if err != nil {
+		logit.Error.Println("Provision:" + err.Error())
+		return err
+	}
+	file, err = ioutil.TempFile("/tmp", "openshift-template")
+	if err != nil {
+		logit.Error.Println("Provision:" + err.Error())
+		return err
+	}
+	defer os.Remove(file.Name())
+	err = ioutil.WriteFile(file.Name(), data, 0644)
+	if err != nil {
+		logit.Error.Println("Provision:" + err.Error())
+		return err
+	}
+
+	//create the admin service
+	err = OpenshiftCreate(username, password, file.Name())
+	if err != nil {
+		logit.Info.Println("Provision:" + err.Error())
 	}
 
 	var pgport admindb.Setting
@@ -204,14 +263,31 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 		return err
 	}
 
-	//create the service to the PG port
-	podInfo.PORT = pgport.Value
-	podInfo.ID = podInfo.ID + "-db"
-	err = kubeclient.CreateService(KubeURL, podInfo)
+	//generate the db service template
+	serviceInfo = template.KubeServiceParams{
+		NAME: params.ContainerName + "-db",
+		PORT: pgport.Value,
+	}
+
+	file, err = ioutil.TempFile("/tmp", "openshift-template")
 	if err != nil {
 		logit.Error.Println("Provision:" + err.Error())
 		return err
 	}
+	defer os.Remove(file.Name())
+
+	err = ioutil.WriteFile(file.Name(), data, 0644)
+	if err != nil {
+		logit.Error.Println("Provision:" + err.Error())
+		return err
+	}
+
+	//create the service to the PG port
+	err = OpenshiftCreate(username, password, file.Name())
+	if err != nil {
+		logit.Info.Println("Provision:" + err.Error())
+	}
+
 	//we have to wait here since the Kube sometimes
 	//is not that fast in setting up the service
 	//for a pod..choosing 10 seconds to wait
@@ -448,4 +524,50 @@ func getDockerResourceSettings(dbConn *sql.DB, size string) (string, string, err
 
 	return CPU, MEM, err
 
+}
+
+func OpenshiftCreate(username string, password string, templatePath string) error {
+	logit.Info.Println("Openshift create command called username=" + username + " password=" + password + " templatePath=" + templatePath)
+
+	var cmd *exec.Cmd
+	cmd = exec.Command("openshift-create.sh", OPENSHIFT_URL, username, password, templatePath)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	var err error
+	err = cmd.Run()
+	if err != nil {
+		logit.Error.Println(err.Error())
+		return err
+	}
+
+	logit.Info.Println(out.String())
+	return err
+}
+
+func OpenshiftDelete(username string, password string, objectName string, objectType string) error {
+	logit.Info.Println("Openshift delete command called username=" + username + " password=" + password + " objectName=" + objectName + " objectType=" + objectType)
+
+	var cmd *exec.Cmd
+	cmd = exec.Command("openshift-delete.sh", OPENSHIFT_URL, username, password, objectName, objectType)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	var err error
+	err = cmd.Run()
+	if err != nil {
+		logit.Error.Println(err.Error())
+		return err
+	}
+
+	logit.Info.Println(out.String())
+	return err
+}
+
+func getTempPath(data []byte) (string, error) {
+	var err error
+
+	return "/tmp/foo", err
 }
