@@ -18,7 +18,7 @@ package collect
 import (
 	"database/sql"
 	"fmt"
-	"github.com/crunchydata/crunchy-postgresql-manager/logit"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
 	_ "github.com/lib/pq"
 	"strconv"
 )

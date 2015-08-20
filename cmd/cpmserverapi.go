@@ -19,8 +19,8 @@ import (
 	"flag"
 	"fmt"
 	"github.com/ant0ine/go-json-rest/rest"
-	"github.com/crunchydata/crunchy-postgresql-manager/cpmserverapi"
-	"github.com/crunchydata/crunchy-postgresql-manager/logit"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/cpmserverapi"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
 	"log"
 	"net/http"
 )

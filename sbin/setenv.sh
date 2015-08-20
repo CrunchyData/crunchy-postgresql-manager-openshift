@@ -15,7 +15,7 @@
 
 export PGROOT=/usr/pgsql-9.4
 export CPMBASE=/var/cpm
-export PGDATA=/pgdata
+export PGDATA=/pgdata/$HOSTNAME
 export PG_LOG=/tmp/pg.log
 export CLUSTER_LOG=/tmp/cluster-admin.log
 export PATH=$CPMBASE/bin:$PGROOT/bin:$PATH

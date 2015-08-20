@@ -17,7 +17,7 @@ package backup
 
 import (
 	"errors"
-	"github.com/crunchydata/crunchy-postgresql-manager/logit"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
 	"net/rpc"
 )
 

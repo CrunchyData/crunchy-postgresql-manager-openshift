@@ -18,9 +18,9 @@ package backup
 import (
 	"database/sql"
 	"fmt"
-	"github.com/crunchydata/crunchy-postgresql-manager/admindb"
-	"github.com/crunchydata/crunchy-postgresql-manager/cpmserverapi"
-	"github.com/crunchydata/crunchy-postgresql-manager/logit"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/admindb"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/cpmserverapi"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
 	"time"
 )
 

@@ -17,7 +17,7 @@ package util
 
 import (
 	"database/sql"
-	"github.com/crunchydata/crunchy-postgresql-manager/logit"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
 	"os"
 )
 

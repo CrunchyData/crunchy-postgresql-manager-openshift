@@ -1,8 +1,8 @@
 package collect
 
 import (
-	"github.com/crunchydata/crunchy-postgresql-manager/cpmserverapi"
-	"github.com/crunchydata/crunchy-postgresql-manager/logit"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/cpmserverapi"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
 	"strconv"
 	"strings"
 	"time"

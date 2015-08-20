@@ -16,19 +16,36 @@
 package adminapi
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
 	"github.com/ant0ine/go-json-rest/rest"
-	"github.com/crunchydata/crunchy-postgresql-manager/admindb"
-	"github.com/crunchydata/crunchy-postgresql-manager/cpmcontainerapi"
-	"github.com/crunchydata/crunchy-postgresql-manager/cpmserverapi"
-	"github.com/crunchydata/crunchy-postgresql-manager/logit"
-	"github.com/crunchydata/crunchy-postgresql-manager/template"
-	"github.com/crunchydata/crunchy-postgresql-manager/util"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/admindb"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/cpmcontainerapi"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/cpmserverapi"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/template"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/util"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
+	"os/exec"
 	"strconv"
 	"time"
 )
+
+var OPENSHIFT_URL string
+
+func init() {
+	OPENSHIFT_URL = os.Getenv("OPENSHIFT_URL")
+	if OPENSHIFT_URL == "" {
+		log.Fatal("OPENSHIFT_URL env var not set")
+	}
+
+	logit.Info.Println("OPENSHIFT url " + OPENSHIFT_URL)
+
+}
 
 //docker run
 //TODO:  convert this to POST
@@ -126,10 +143,10 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 
 	var errorStr string
 	//make sure the container name is not already taken
-	_, err2 := admindb.GetContainerByName(dbConn, params.ContainerName)
-	if err2 != nil {
-		if err2 != sql.ErrNoRows {
-			return err2
+	_, err := admindb.GetContainerByName(dbConn, params.ContainerName)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return err
 		}
 	} else {
 		errorStr = "container name" + params.ContainerName + " already used can't provision"
@@ -137,75 +154,144 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 		return errors.New(errorStr)
 	}
 
-	//go get the IPAddress
-	server, err := admindb.GetServer(dbConn, params.ServerID)
-	if err != nil {
-		logit.Error.Println("Provision:" + err.Error())
-		return err
-	}
-
-	logit.Info.Println("provisioning on server " + server.IPAddress)
-
-	//for database nodes, on the target server, we need to allocate
-	//a disk volume for the /pgdata container volume to work with
-	//this causes a volume to be created with the directory
-	//named the same as the container name
-
-	var responseStr string
-
-	params.PGDataPath = server.PGDataPath + "/" + params.ContainerName
-
-	logit.Info.Println("PROFILE provisionImpl 2 about to provision volume")
-	if params.Image != "cpm-pgpool" {
-		preq := &cpmserverapi.DiskProvisionRequest{}
-		preq.Path = params.PGDataPath
-		var url = "http://" + server.IPAddress + ":10001"
-		_, err = cpmserverapi.DiskProvisionClient(url, preq)
-		if err != nil {
-			logit.Error.Println("Provision: problem in provisionvolume call" + err.Error())
-			return err
-		}
-		logit.Info.Println("Provision: provisionvolume call response=" + responseStr)
-	}
-	logit.Info.Println("PROFILE provisionImpl 3 provision volume completed")
-
-	//run docker run to create the container
+	//create the container by constructing a template and calling openshift
 
 	params.CPU, params.MEM, err = getDockerResourceSettings(dbConn, PROFILE)
 	if err != nil {
 		logit.Error.Println("Provision: problem in getting profiles call" + err.Error())
 		return err
 	}
-	/*
-		var pgport admindb.Setting
-		pgport, err = admindb.GetSetting(dbConn, "PG-PORT")
-		if err != nil {
-			logit.Error.Println("Provision:PG-PORT setting error " + err.Error())
-			return err
-		}
-	*/
 
-	var output string
+	//remove any existing pods and services with this name
+	var username = "test"
+	var password = "test"
+	var objectName = params.ContainerName + "-admin"
+	var objectType = "pod"
 
-	//remove any existing docker containers with this name
-	logit.Info.Println("PROFILE provisionImpl remove old container start")
-	rreq := &cpmserverapi.DockerRemoveRequest{}
-	rreq.ContainerName = params.ContainerName
-	var url = "http://" + server.IPAddress + ":10001"
-	_, err = cpmserverapi.DockerRemoveClient(url, rreq)
+	err = OpenshiftDelete(username, password, objectName, objectType)
+	if err != nil {
+		logit.Info.Println("Provision:" + err.Error())
+	}
+
+	objectName = params.ContainerName + "-db"
+	err = OpenshiftDelete(username, password, objectName, objectType)
+	if err != nil {
+		logit.Info.Println("Provision:" + err.Error())
+	}
+
+	podInfo := template.KubePodParams{
+		ID:                   params.ContainerName,
+		PODID:                params.ContainerName,
+		CPU:                  params.CPU,
+		MEM:                  params.MEM,
+		IMAGE:                params.Image,
+		VOLUME:               params.PGDataPath,
+		PORT:                 "13000",
+		BACKUP_NAME:          "",
+		BACKUP_SERVERNAME:    "",
+		BACKUP_SERVERIP:      "",
+		BACKUP_SCHEDULEID:    "",
+		BACKUP_PROFILENAME:   "",
+		BACKUP_CONTAINERNAME: "",
+		BACKUP_PATH:          "",
+		BACKUP_HOST:          "",
+		BACKUP_PORT:          "",
+		BACKUP_USER:          "",
+		BACKUP_SERVER_URL:    "",
+	}
+
+	//generate the pod template
+	var data []byte
+	data, err = template.KubeNodePod(podInfo)
 	if err != nil {
 		logit.Error.Println("Provision:" + err.Error())
 		return err
 	}
-	logit.Info.Println("PROFILE provisionImpl remove old container end")
-	params.CommandPath = "docker-run.sh"
-	_, err = cpmserverapi.DockerRunClient(url, params)
+
+	//create the pod
+	file, err := ioutil.TempFile("/tmp", "openshift-template")
 	if err != nil {
-		logit.Error.Println("Provision: " + output)
+		logit.Error.Println("Provision:" + err.Error())
 		return err
 	}
-	logit.Info.Println("docker-run.sh output=" + output)
-	logit.Info.Println("PROFILE provisionImpl end of docker-run")
+	defer os.Remove(file.Name())
+	err = ioutil.WriteFile(file.Name(), data, 0644)
+	if err != nil {
+		logit.Error.Println("Provision:" + err.Error())
+		return err
+	}
+
+	err = OpenshiftCreate(username, password, file.Name())
+	if err != nil {
+		logit.Info.Println("Provision:" + err.Error())
+	}
+
+	//generate the admin service template
+	serviceInfo := template.KubeServiceParams{
+		NAME: params.ContainerName + "-admin",
+		PORT: "13000",
+	}
+
+	//create the admin service template
+	data, err = template.KubeNodeService(serviceInfo)
+	if err != nil {
+		logit.Error.Println("Provision:" + err.Error())
+		return err
+	}
+	file, err = ioutil.TempFile("/tmp", "openshift-template")
+	if err != nil {
+		logit.Error.Println("Provision:" + err.Error())
+		return err
+	}
+	defer os.Remove(file.Name())
+	err = ioutil.WriteFile(file.Name(), data, 0644)
+	if err != nil {
+		logit.Error.Println("Provision:" + err.Error())
+		return err
+	}
+
+	//create the admin service
+	err = OpenshiftCreate(username, password, file.Name())
+	if err != nil {
+		logit.Info.Println("Provision:" + err.Error())
+	}
+
+	var pgport admindb.Setting
+	pgport, err = admindb.GetSetting(dbConn, "PG-PORT")
+	if err != nil {
+		logit.Error.Println("Provision:PG-PORT setting error " + err.Error())
+		return err
+	}
+
+	//generate the db service template
+	serviceInfo = template.KubeServiceParams{
+		NAME: params.ContainerName + "-db",
+		PORT: pgport.Value,
+	}
+
+	file, err = ioutil.TempFile("/tmp", "openshift-template")
+	if err != nil {
+		logit.Error.Println("Provision:" + err.Error())
+		return err
+	}
+	defer os.Remove(file.Name())
+
+	err = ioutil.WriteFile(file.Name(), data, 0644)
+	if err != nil {
+		logit.Error.Println("Provision:" + err.Error())
+		return err
+	}
+
+	//create the service to the PG port
+	err = OpenshiftCreate(username, password, file.Name())
+	if err != nil {
+		logit.Info.Println("Provision:" + err.Error())
+	}
+
+	//we have to wait here since the Kube sometimes
+	//is not that fast in setting up the service
+	//for a pod..choosing 10 seconds to wait
+	time.Sleep(10000 * time.Millisecond)
 
 	dbnode := admindb.Container{}
 	dbnode.ID = ""
@@ -438,4 +524,50 @@ func getDockerResourceSettings(dbConn *sql.DB, size string) (string, string, err
 
 	return CPU, MEM, err
 
+}
+
+func OpenshiftCreate(username string, password string, templatePath string) error {
+	logit.Info.Println("Openshift create command called username=" + username + " password=" + password + " templatePath=" + templatePath)
+
+	var cmd *exec.Cmd
+	cmd = exec.Command("openshift-create.sh", OPENSHIFT_URL, username, password, templatePath)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	var err error
+	err = cmd.Run()
+	if err != nil {
+		logit.Error.Println(err.Error())
+		return err
+	}
+
+	logit.Info.Println(out.String())
+	return err
+}
+
+func OpenshiftDelete(username string, password string, objectName string, objectType string) error {
+	logit.Info.Println("Openshift delete command called username=" + username + " password=" + password + " objectName=" + objectName + " objectType=" + objectType)
+
+	var cmd *exec.Cmd
+	cmd = exec.Command("openshift-delete.sh", OPENSHIFT_URL, username, password, objectName, objectType)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	var err error
+	err = cmd.Run()
+	if err != nil {
+		logit.Error.Println(err.Error())
+		return err
+	}
+
+	logit.Info.Println(out.String())
+	return err
+}
+
+func getTempPath(data []byte) (string, error) {
+	var err error
+
+	return "/tmp/foo", err
 }

@@ -20,9 +20,9 @@ import (
 	"database/sql"
 	"errors"
 	"flag"
-	"github.com/crunchydata/crunchy-postgresql-manager/admindb"
-	"github.com/crunchydata/crunchy-postgresql-manager/logit"
-	"github.com/crunchydata/crunchy-postgresql-manager/util"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/admindb"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/util"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -37,6 +37,35 @@ var bridgeiplistFlag = flag.String("bridgeiplist", "", "list of bridge IP addres
 var pgUserFlag = flag.String("pguserid", "", "pg user ID")
 
 var outputFile *os.File
+
+type KubePodParams struct {
+	NAME                 string
+	ID                   string
+	PODID                string
+	CPU                  string
+	MEM                  string
+	IMAGE                string
+	VOLUME               string
+	DOMAIN               string
+	PORT                 string
+	PG_MODE              string
+	BACKUP_NAME          string
+	BACKUP_SERVERNAME    string
+	BACKUP_SERVERIP      string
+	BACKUP_SCHEDULEID    string
+	BACKUP_PROFILENAME   string
+	BACKUP_CONTAINERNAME string
+	BACKUP_PATH          string
+	BACKUP_HOST          string
+	BACKUP_PORT          string
+	BACKUP_USER          string
+	BACKUP_SERVER_URL    string
+}
+
+type KubeServiceParams struct {
+	NAME string
+	PORT string
+}
 
 type Rule struct {
 	Type     string
@@ -348,4 +377,44 @@ func Poolconf(poolnames []string) (string, error) {
 	logit.Info.Println("Poolconf:" + buff.String())
 
 	return buff.String(), nil
+}
+
+func KubeNodePod(info KubePodParams) ([]byte, error) {
+
+	var path string
+	path = util.GetBase() + "/conf/" + "pod-template.json"
+
+	contents, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	tmpl, err := template.New("kube").Parse(string(contents))
+	if err != nil {
+		return nil, err
+	}
+	buff := bytes.NewBufferString("")
+	err = tmpl.Execute(buff, info)
+
+	return buff.Bytes(), nil
+}
+
+func KubeNodeService(info KubeServiceParams) ([]byte, error) {
+
+	var path string
+	path = util.GetBase() + "/conf/" + "service-template.json"
+
+	contents, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	tmpl, err := template.New("kube").Parse(string(contents))
+	if err != nil {
+		return nil, err
+	}
+	buff := bytes.NewBufferString("")
+	err = tmpl.Execute(buff, info)
+
+	return buff.Bytes(), nil
 }

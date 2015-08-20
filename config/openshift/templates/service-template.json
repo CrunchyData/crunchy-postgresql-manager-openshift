@@ -1,0 +1,27 @@
+{
+    "kind": "Service",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "{{.NAME}}",
+        "labels": {
+            "name": "{{.NAME}}"
+        }
+    },
+    "spec": {
+        "ports": [{
+            "protocol": "TCP",
+            "port": {{.PORT}},
+            "targetPort": {{.PORT}},
+            "nodePort": 0
+        }],
+        "selector": {
+            "name": "{{.NAME}}"
+        },
+        "portalIP": "None",
+        "type": "ClusterIP",
+        "sessionAffinity": "None"
+    },
+    "status": {
+        "loadBalancer": {}
+    }
+}

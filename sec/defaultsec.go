@@ -19,7 +19,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/crunchydata/crunchy-postgresql-manager/logit"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
 )
 
 //this is the default security implementation for CPM, others

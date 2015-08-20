@@ -17,9 +17,9 @@ package adminapi
 
 import (
 	"github.com/ant0ine/go-json-rest/rest"
-	"github.com/crunchydata/crunchy-postgresql-manager/logit"
-	"github.com/crunchydata/crunchy-postgresql-manager/sec"
-	"github.com/crunchydata/crunchy-postgresql-manager/util"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/sec"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/util"
 	"net/http"
 )
 

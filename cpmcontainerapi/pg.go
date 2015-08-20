@@ -18,7 +18,7 @@ package cpmcontainerapi
 import (
 	"bytes"
 	"github.com/ant0ine/go-json-rest/rest"
-	"github.com/crunchydata/crunchy-postgresql-manager/logit"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
 	"io/ioutil"
 	"net/http"
 	"os/exec"

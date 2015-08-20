@@ -18,8 +18,8 @@ package admindb
 import (
 	"database/sql"
 	"fmt"
-	"github.com/crunchydata/crunchy-postgresql-manager/logit"
-	"github.com/crunchydata/crunchy-postgresql-manager/sec"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/logit"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/sec"
 	_ "github.com/lib/pq"
 	"strconv"
 	"strings"

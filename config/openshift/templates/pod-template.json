@@ -1,0 +1,51 @@
+{
+    "kind": "Pod",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "{{.NAME}}",
+        "labels": {
+            "name": "{{.NAME}}"
+        }
+    },
+    "spec": {
+        "containers": [{
+            "name": "{{.NAME}}",
+            "image": "{{.IMAGE}}",
+            "ports": [{
+                "containerPort": {{.PORT}},
+                "protocol": "TCP"
+            }],
+            "env": [{
+                "name": "PG_MODE",
+                "value": "{{.PG_MODE}}"
+            }, {
+                "name": "DB_USER",
+                "value": "postgres"
+            }, {
+                "name": "CPMBASE",
+                "value": "/var/cpm"
+            }, {
+                "name": "DOMAIN",
+                "value": "{{.DOMAIN}}"
+            }, {
+                "name": "DB_PORT",
+                "value": "{{.PORT}}"
+            }, {
+                "name": "DB_HOST",
+                "value": "127.0.0.1"
+            }],
+            "securityContext": {
+                "capabilities": {}
+            },
+            "volumeMounts": [{
+                "mountPath": "/pgdata",
+                "name": "pgdata",
+                "readOnly": false
+            }]
+        }],
+        "volumes": [{
+            "name": "pgdata",
+            "emptyDir": {}
+        }]
+    }
+}

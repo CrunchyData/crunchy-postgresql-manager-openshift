@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/crunchydata/crunchy-postgresql-manager/cpmserverapi"
+	"github.com/crunchydata/crunchy-postgresql-manager-openshift/cpmserverapi"
 )
 
 type Person struct {
@@ -72,7 +72,7 @@ func testDockerRun() {
 	request.CommandPath = "docker-run.sh"
 	request.CPU = "0"
 	request.MEM = "0"
-	request.Image = "cpm-node"
+	request.Image = "cpm-node-os"
 	request.PGDataPath = "/tmp/foo"
 	request.ContainerName = "testpoo"
 	envvars := make(map[string]string)

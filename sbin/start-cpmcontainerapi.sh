@@ -19,10 +19,12 @@
 
 source /var/cpm/bin/setenv.sh
 
+mkdir -p $PGDATA
+
 # when the container starts, see if there is a pg instance we can start up
-if [ -f /pgdata/postgresql.conf ]; then
-	rm /pgdata/postmaster.pid
-	pg_ctl -D /pgdata start
+if [ -f $PGDATA/postgresql.conf ]; then
+	rm $PGDATA/postmaster.pid
+	pg_ctl -D $PGDATA start
 fi
 
 cpmcontainerapi 

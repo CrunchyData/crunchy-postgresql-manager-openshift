@@ -1,4 +1,4 @@
-FROM cpm-base:latest
+FROM cpm-base-os:latest
 MAINTAINER crunchy
 
 # open up the backupserver port
