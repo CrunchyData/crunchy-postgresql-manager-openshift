@@ -1,0 +1,8 @@
+PROFILE=SM
+IMAGE=cpm-node-os
+SERVER=1
+PROJECT=1
+NAME=foo
+STAND=true
+TOKEN=948ddde3-2a2f-4c6c-92bd-6f9d881890cc
+curl http://cpm-admin:13001/provision/$PROFILE.$IMAGE.$SERVER.$PROJECT.$NAME.$STAND.$TOKEN
