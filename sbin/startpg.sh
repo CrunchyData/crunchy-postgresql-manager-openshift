@@ -16,4 +16,4 @@
 
 source /var/cpm/bin/setenv.sh
 
-pg_ctl -w -D /pgdata start 2> /tmp/startpg.err > /tmp/startpg.log
+pg_ctl -w -D $PGDATA start 2> /tmp/startpg.err > /tmp/startpg.log

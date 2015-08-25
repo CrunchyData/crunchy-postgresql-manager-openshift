@@ -2,9 +2,9 @@
     "kind": "Service",
     "apiVersion": "v1",
     "metadata": {
-        "name": "{{.NAME}}",
+        "name": "{{.SERVICENAME}}",
         "labels": {
-            "name": "{{.NAME}}"
+            "name": "{{.SERVICENAME}}"
         }
     },
     "spec": {

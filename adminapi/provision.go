@@ -165,7 +165,7 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 	//remove any existing pods and services with this name
 	var username = "test"
 	var password = "test"
-	var objectName = params.ContainerName + "-admin"
+	var objectName = params.ContainerName
 	var objectType = "pod"
 
 	err = OpenshiftDelete(username, password, objectName, objectType)
@@ -230,8 +230,9 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 
 	//generate the admin service template
 	serviceInfo := template.KubeServiceParams{
-		NAME: params.ContainerName + "-admin",
-		PORT: "13000",
+		SERVICENAME: params.ContainerName,
+		NAME: params.ContainerName,
+		PORT: "10001",
 	}
 
 	//create the admin service template
@@ -271,7 +272,8 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 	//generate the db service template
 	var dbServiceParams template.KubeServiceParams
 	dbServiceParams = template.KubeServiceParams{
-		NAME: params.ContainerName + "-db",
+		SERVICENAME: params.ContainerName + "-db",
+		NAME: params.ContainerName,
 		PORT: pgport.Value,
 	}
 

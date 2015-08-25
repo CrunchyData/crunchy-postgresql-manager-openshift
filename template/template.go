@@ -63,6 +63,7 @@ type KubePodParams struct {
 }
 
 type KubeServiceParams struct {
+	SERVICENAME string
 	NAME string
 	PORT string
 }

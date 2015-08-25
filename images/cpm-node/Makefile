@@ -3,6 +3,7 @@ build:
 		rm -rf bin
 		mkdir bin
 		cp ../../sbin/setenv.sh ./bin
+		cp ../../sbin/initdb.sh ./bin
 		cp ../../sbin/start-cpmcontainerapi.sh ./bin
 		cp ../../sbin/fail-over.sh ./bin
 		cp ../../sbin/badger-generate.sh ./bin

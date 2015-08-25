@@ -17,5 +17,5 @@
 ls -l /
 id
 source /var/cpm/bin/setenv.sh
-initdb /pgdata
+initdb $PGDATA
 
