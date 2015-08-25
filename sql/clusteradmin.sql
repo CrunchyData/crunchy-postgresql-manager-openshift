@@ -33,6 +33,11 @@ create table server (
 	)
 );
 
+insert into  server (
+name , ipaddress, dockerbip, pgdatapath, serverclass, createdt ) values (
+'server1' , '192.168.10.100', '172.10.1.1', '/pgdata', 'low',  now());
+
+
 create table cluster (
 	id serial primary key,
 	name varchar(20) unique not null,

@@ -180,6 +180,7 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 	}
 
 	podInfo := template.KubePodParams{
+		NAME:                   params.ContainerName,
 		ID:                   params.ContainerName,
 		PODID:                params.ContainerName,
 		CPU:                  params.CPU,
@@ -201,12 +202,13 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 	}
 
 	//generate the pod template
-	var data []byte
-	data, err = template.KubeNodePod(podInfo)
+	var podTemplateData []byte
+	podTemplateData, err = template.KubeNodePod(podInfo)
 	if err != nil {
 		logit.Error.Println("Provision:" + err.Error())
 		return err
 	}
+	logit.Info.Println("pod template=" + string(podTemplateData[:]))
 
 	//create the pod
 	file, err := ioutil.TempFile("/tmp", "openshift-template")
@@ -215,7 +217,7 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 		return err
 	}
 	defer os.Remove(file.Name())
-	err = ioutil.WriteFile(file.Name(), data, 0644)
+	err = ioutil.WriteFile(file.Name(), podTemplateData, 0644)
 	if err != nil {
 		logit.Error.Println("Provision:" + err.Error())
 		return err
@@ -233,18 +235,21 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 	}
 
 	//create the admin service template
-	data, err = template.KubeNodeService(serviceInfo)
+	var serviceTemplateData []byte
+	serviceTemplateData, err = template.KubeNodeService(serviceInfo)
 	if err != nil {
 		logit.Error.Println("Provision:" + err.Error())
 		return err
 	}
+	logit.Info.Println("service template=" + string(serviceTemplateData[:]))
+
 	file, err = ioutil.TempFile("/tmp", "openshift-template")
 	if err != nil {
 		logit.Error.Println("Provision:" + err.Error())
 		return err
 	}
 	defer os.Remove(file.Name())
-	err = ioutil.WriteFile(file.Name(), data, 0644)
+	err = ioutil.WriteFile(file.Name(), serviceTemplateData, 0644)
 	if err != nil {
 		logit.Error.Println("Provision:" + err.Error())
 		return err
@@ -264,11 +269,16 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 	}
 
 	//generate the db service template
-	serviceInfo = template.KubeServiceParams{
+	var dbServiceParams template.KubeServiceParams
+	dbServiceParams = template.KubeServiceParams{
 		NAME: params.ContainerName + "-db",
 		PORT: pgport.Value,
 	}
 
+	var dbServiceData []byte
+	dbServiceData, err = template.KubeNodeService(dbServiceParams)
+
+	logit.Info.Println("db service template=" + string(dbServiceData[:]))
 	file, err = ioutil.TempFile("/tmp", "openshift-template")
 	if err != nil {
 		logit.Error.Println("Provision:" + err.Error())
@@ -276,7 +286,7 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 	}
 	defer os.Remove(file.Name())
 
-	err = ioutil.WriteFile(file.Name(), data, 0644)
+	err = ioutil.WriteFile(file.Name(), dbServiceData, 0644)
 	if err != nil {
 		logit.Error.Println("Provision:" + err.Error())
 		return err
@@ -527,7 +537,7 @@ func getDockerResourceSettings(dbConn *sql.DB, size string) (string, string, err
 }
 
 func OpenshiftCreate(username string, password string, templatePath string) error {
-	logit.Info.Println("Openshift create command called username=" + username + " password=" + password + " templatePath=" + templatePath)
+	logit.Info.Println("Openshift create command called URL=" + OPENSHIFT_URL + " username=" + username + " password=" + password + " templatePath=" + templatePath)
 
 	var cmd *exec.Cmd
 	cmd = exec.Command("openshift-create.sh", OPENSHIFT_URL, username, password, templatePath)
@@ -539,6 +549,7 @@ func OpenshiftCreate(username string, password string, templatePath string) erro
 	err = cmd.Run()
 	if err != nil {
 		logit.Error.Println(err.Error())
+		logit.Info.Println(out.String())
 		return err
 	}
 
