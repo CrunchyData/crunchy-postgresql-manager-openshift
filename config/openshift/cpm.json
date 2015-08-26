@@ -1,0 +1,116 @@
+{
+    "kind": "Template",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "cpm",
+        "creationTimestamp": null,
+        "annotations": {
+            "description": "cpm pod",
+            "iconClass": "icon-database",
+            "tags": "database,postgresql,replication"
+        }
+    },
+    "parameters": [
+    {
+        "name": "PG_MODE",
+        "description": "The mode we are running PG in",
+        "value": "standalone"
+    }, {
+        "name": "PG_USER",
+        "description": "The username that clients will use to connect to PG server",
+        "value": "testuser"
+    }, {
+        "name": "PG_DATABASE",
+        "description": "The name of the database that will be created",
+        "value": "userdb"
+    }],
+
+    "objects": [ 
+{
+        "kind": "Service",
+        "apiVersion": "v1",
+        "metadata": {
+            "name": "cpm",
+            "labels": {
+                "name": "cpm"
+            }
+        },
+        "spec": {
+            "ports": [{
+                "protocol": "TCP",
+                "port": 13001,
+                "targetPort": 13001,
+                "nodePort": 0
+            }],
+            "selector": {
+                "name": "cpm"
+            },
+            "portalIP": "None",
+            "type": "ClusterIP",
+            "sessionAffinity": "None"
+        },
+        "status": {
+            "loadBalancer": {}
+        }
+}, 
+{
+    "kind": "Pod",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "cpm",
+        "labels": {
+            "name": "cpm"
+        }
+    },
+    "spec": {
+        "containers": [{
+            "name": "cpm",
+            "image": "crunchydata/cpm-os",
+            "ports": [{
+                "containerPort": 13001,
+                "protocol": "TCP"
+            }],
+                       "env": [
+			{
+                            "name": "PG_MODE",
+                            "value": "${PG_MODE}"
+                        }, {
+                            "name": "DB_USER",
+                            "value": "postgres"
+                        }, {
+                            "name": "CPMBASE",
+                            "value": "/var/cpm"
+                        }, {
+                            "name": "DOMAIN",
+                            "value": "pgproject.svc.cluster.local"
+                        }, {
+                            "name": "DB_PORT",
+                            "value": "5432"
+                        }, {
+                            "name": "DB_HOST",
+                            "value": "127.0.0.1"
+                        }, {
+                            "name": "OPENSHIFT_URL",
+                            "value": "https://192.168.10.100:8443"
+                        }, {
+                            "name": "PG_DATABASE",
+                            "value": "${PG_DATABASE}"
+                        }],
+        "securityContext": {
+        },
+
+
+            "volumeMounts": [{
+                "mountPath": "/www",
+                "name": "www",
+                "readOnly": false
+            }]
+        }],
+        "volumes": [{
+            "name": "www",
+                "hostPath": { "path":"/home/jeffmc/devos/src/github.com/crunchydata/crunchy-postgresql-manager-openshift/images/cpm/www/v3" }
+        }]
+    }
+}
+]
+}

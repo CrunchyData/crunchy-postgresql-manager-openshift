@@ -7,7 +7,7 @@ edit /etc/sysconfig/docker
 
 add static IP address into each that we use for DNS resolution
 
-## the Origin security context to allow RunAsAny
+## the Origin security context to allow RunAsAny and allow HostDir volume plugin
 
 ~~~~~~~~
 sudo docker exec -it origin bash
