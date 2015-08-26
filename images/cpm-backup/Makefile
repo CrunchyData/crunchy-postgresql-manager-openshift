@@ -5,6 +5,6 @@ build:
 		cp ../../sbin/start-backupserver.sh ./bin
 		cp ../../../../../../bin/backupserver ./bin
 		cp ../../../../../../bin/dummyserver ./bin
-	        sudo docker build -t cpm-backup .
-		sudo docker tag -f cpm-backup:latest crunchydata/cpm-backup
+	        sudo docker build -t cpm-backup-os .
+		sudo docker tag -f cpm-backup-os:latest crunchydata/cpm-backup-os
 

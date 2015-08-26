@@ -1,0 +1,93 @@
+{
+    "kind": "Template",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "cpm-backup",
+        "creationTimestamp": null,
+        "annotations": {
+            "description": "cpm-backup pod",
+            "iconClass": "icon-database",
+            "tags": "database,postgresql,replication"
+        }
+    },
+    "parameters": [
+    {
+        "name": "DB_HOST",
+        "description": "The cpm-admin database ",
+        "value": "cpm-admin"
+    }, {
+        "name": "DB_USER",
+        "description": "The cpm-admin database user to connect with",
+        "value": "postgres"
+    }, {
+        "name": "DB_PORT",
+        "description": "The db port",
+        "value": "5432"
+    }],
+
+    "objects": [ 
+{
+        "kind": "Service",
+        "apiVersion": "v1",
+        "metadata": {
+            "name": "cpm-backup",
+            "labels": {
+                "name": "cpm-backup"
+            }
+        },
+        "spec": {
+            "ports": [{
+                "protocol": "TCP",
+                "port": 13000,
+                "targetPort": 13000,
+                "nodePort": 0
+            }],
+            "selector": {
+                "name": "cpm-backup"
+            },
+            "portalIP": "None",
+            "type": "ClusterIP",
+            "sessionAffinity": "None"
+        },
+        "status": {
+            "loadBalancer": {}
+        }
+}, 
+{
+    "kind": "Pod",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "cpm-backup",
+        "labels": {
+            "name": "cpm-backup"
+        }
+    },
+    "spec": {
+        "containers": [{
+            "name": "cpm-backup",
+            "image": "crunchydata/cpm-backup-os",
+            "ports": [{
+                "containerPort": 13000,
+                "protocol": "TCP"
+            }],
+                       "env": [
+			{
+                            "name": "DB_HOST",
+                            "value": "${DB_HOST}"
+                        }, {
+                            "name": "DB_USER",
+                            "value": "postgres"
+                        }, {
+                            "name": "DB_PORT",
+                            "value": "5432"
+                        }, {
+                            "name": "OPENSHIFT_URL",
+                            "value": "https://192.168.10.100:8443"
+                        }],
+        "securityContext": {
+        }
+        }]
+    }
+}
+]
+}
