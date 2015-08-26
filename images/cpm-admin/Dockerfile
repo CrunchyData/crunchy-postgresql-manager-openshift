@@ -5,9 +5,7 @@ ADD bin /var/cpm/bin/
 ADD conf /var/cpm/conf/
 
 # the port for the adminapi REST API
-EXPOSE 13000
-
-VOLUME ["/kubekeys"]
+EXPOSE 13001
 
 USER postgres
 

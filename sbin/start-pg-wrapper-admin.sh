@@ -34,12 +34,12 @@ if [ ! -f $PGDATA/postgresql.conf ]; then
         echo "setting domain to " $THISDOMAIN >> /tmp/start-db.log
 
         cp $HBA /tmp
-        sed "s/crunchy.lab/$THISDOMAIN/g" /tmp/pg_hba.conf > /pgdata/pg_hba.conf
-        cat /pgdata/pg_hba.conf >> /tmp/start-db.log
+        sed "s/crunchy.lab/$THISDOMAIN/g" /tmp/pg_hba.conf > $PGDATA/pg_hba.conf
+        cat $PGDATA/pg_hba.conf >> /tmp/start-db.log
 
         sed -i "s/crunchy.lab/$THISDOMAIN/g" /var/cpm/bin/setup.sql
 
-        cp /var/cpm/conf/admin/postgresql.conf /pgdata/
+        cp /var/cpm/conf/admin/postgresql.conf $PGDATA
         echo "starting db" >> /tmp/start-db.log
 
         pg_ctl -D $PGDATA start
@@ -53,7 +53,7 @@ fi
 # clean up any old pid file that might have remained
 # during a bad shutdown of the container/postgres
 #
-rm /pgdata/postmaster.pid
+rm $PGDATA/postmaster.pid
 #
 # the normal startup of pg
 #
