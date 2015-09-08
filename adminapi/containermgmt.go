@@ -69,6 +69,7 @@ func GetNode(w rest.ResponseWriter, r *rest.Request) {
 	var currentStatus = "UNKNOWN"
 
 	//go get the docker server IPAddress
+	/**
 	server := admindb.Server{}
 	server, err = admindb.GetServer(dbConn, results.ServerID)
 	if err != nil {
@@ -76,6 +77,7 @@ func GetNode(w rest.ResponseWriter, r *rest.Request) {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	*/
 	var domain string
 	domain, err = admindb.GetDomain(dbConn)
 	if err != nil {
@@ -84,6 +86,7 @@ func GetNode(w rest.ResponseWriter, r *rest.Request) {
 		return
 	}
 
+	/**
 	request := &cpmserverapi.DockerInspectRequest{}
 	request.ContainerName = results.Name
 	var url = "http://" + server.IPAddress + ":10001"
@@ -92,22 +95,20 @@ func GetNode(w rest.ResponseWriter, r *rest.Request) {
 		logit.Error.Println("GetNode: " + err.Error())
 		currentStatus = CONTAINER_NOT_FOUND
 	}
+	*/
 
-	if currentStatus != "CONTAINER NOT FOUND" {
-		//ping the db on that node to get current status
-		var pinghost = results.Name
-		if KubeEnv {
-			pinghost = results.Name + "-db"
-		}
-		logit.Info.Println("pinging db on " + pinghost + "." + domain)
-		currentStatus, err = GetPGStatus2(dbConn, results.Name, pinghost+"."+domain)
-		if err != nil {
-			logit.Error.Println("GetNode:" + err.Error())
-			rest.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		logit.Info.Println("pinging db finished")
+	//if currentStatus != "CONTAINER NOT FOUND" {
+	//ping the db on that node to get current status
+	var pinghost = results.Name
+	logit.Info.Println("pinging db on " + pinghost + "." + domain)
+	currentStatus, err = GetPGStatus2(dbConn, results.Name, pinghost)
+	if err != nil {
+		logit.Error.Println("GetNode:" + err.Error())
+		rest.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
+	logit.Info.Println("pinging db finished")
+	//}
 
 	node := ClusterNode{results.ID, results.ClusterID, results.ServerID,
 		results.Name, results.Role, results.Image, results.CreateDate, currentStatus, results.ProjectID, results.ProjectName, results.ServerName, results.ClusterName}

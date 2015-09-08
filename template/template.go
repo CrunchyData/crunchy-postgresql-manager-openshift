@@ -64,8 +64,9 @@ type KubePodParams struct {
 
 type KubeServiceParams struct {
 	SERVICENAME string
-	NAME string
-	PORT string
+	NAME        string
+	PORT        string
+	DBPORT      string
 }
 
 type Rule struct {

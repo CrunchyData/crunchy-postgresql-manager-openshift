@@ -1,4 +1,4 @@
-<p><strong>Create New Database</strong></p>
+<p><strong>Create DB Proxy</strong></p>
 <div>
 	<form class="form-horizontal">
 		<div class="form-group">
@@ -8,12 +8,33 @@
 			</div>
 		</div>
 		<div class="form-group">
-			<label for="inputImage" class="control-label col-xs-2">Image</label>
+			<label for="inputUserID" class="control-label col-xs-2">Database User ID</label>
 			<div class="col-xs-5">
-				<select class="form-control" id="Image" ng-model="container.Image">
-					<option value="cpm-node-os" selected>cpm-node-os</option>
-					<option value="cpm-pgpool-os">cpm-pgpool-o</option>
-				</select>
+				<input type="text" class="form-control" id="inputUserID" ng-model="proxy.UserID">
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="inputUserPassword" class="control-label col-xs-2">Database User Password</label>
+			<div class="col-xs-5">
+				<input type="password" class="form-control" id="inputUserPassword" ng-model="proxy.UserPassword">
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="inputDatabaseHost" class="control-label col-xs-2">Database Host</label>
+			<div class="col-xs-5">
+				<input type="text" class="form-control" id="inputDatabaseHost" ng-model="proxy.DatabaseHost">
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="inputDatabaseName" class="control-label col-xs-2">Database Name</label>
+			<div class="col-xs-5">
+				<input type="text" class="form-control" id="inputDatabaseName" ng-model="proxy.DatabaseName">
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="inputDatabasePort" class="control-label col-xs-2">Database Port</label>
+			<div class="col-xs-5">
+				<input type="text" class="form-control" id="inputDatabasePort" ng-model="proxy.DatabasePort">
 			</div>
 		</div>
 		<div class="form-group">
@@ -31,12 +52,6 @@
 					<option value="MED">medium</option>
 					<option value="LG">large</option>
 				</select>
-			</div>
-		</div>
-		<div class="form-group">
-			<label for="inputStandalone" class="control-label col-xs-2">Standalone</label>
-			<div class="col-xs-5">
-				<input type="checkbox" class="form-control" id="inputStandalone" ng-model="standalone" value="1">
 			</div>
 		</div>
 		<span us-spinner spinner-key="spinner-1"></span>

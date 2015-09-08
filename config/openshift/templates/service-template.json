@@ -8,12 +8,22 @@
         }
     },
     "spec": {
-        "ports": [{
+        "ports": [
+	{
+            "name": "admin-port",
             "protocol": "TCP",
             "port": {{.PORT}},
             "targetPort": {{.PORT}},
             "nodePort": 0
-        }],
+        },
+	{
+            "name": "db-port",
+            "protocol": "TCP",
+            "port": {{.DBPORT}},
+            "targetPort": {{.DBPORT}},
+            "nodePort": 0
+        }
+	],
         "selector": {
             "name": "{{.NAME}}"
         },

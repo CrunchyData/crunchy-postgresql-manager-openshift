@@ -111,7 +111,7 @@
                             "value": "127.0.0.1"
                         }, {
                             "name": "OPENSHIFT_URL",
-                            "value": "https://192.168.10.100:8443"
+                            "value": "https://192.168.1.159:8443"
                         }, {
                             "name": "PG_DATABASE",
                             "value": "${PG_DATABASE}"

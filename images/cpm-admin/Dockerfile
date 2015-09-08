@@ -1,6 +1,6 @@
 FROM cpm-base-os:latest
 MAINTAINER crunchy
-ADD openshift-origin-v1.0.4-757efd9-linux-amd64.tar.gz  /var/cpm/bin/
+ADD  openshift-origin-v1.0.5-96963b6-linux-amd64.tar /var/cpm/bin
 ADD bin /var/cpm/bin/
 ADD conf /var/cpm/conf/
 

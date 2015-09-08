@@ -70,6 +70,12 @@ angular.module('uiRouterSample.projects', [
                                     $state.go('projects.cluster.details', {
                                         clusterId: node.id
                                     });
+                                } else if (node.type == 'proxy') {
+                                    $state.go('projects.proxy.details', {
+                                        containerId: node.id,
+                                        containerName: node.name,
+                                        projectId: node.projectid
+                                    });
                                 } else if (node.type == 'project') {
                                     $state.go('projects.detail.edit', {
                                         projectId: node.id
@@ -179,7 +185,7 @@ angular.module('uiRouterSample.projects', [
 
 
             .state('projects.container.details', {
-                url: '/details/:itemId',
+                url: '/details',
                 views: {
 
                     '': {
@@ -593,6 +599,325 @@ angular.module('uiRouterSample.projects', [
             })
 
 
+            .state('projects.proxy', {
+
+                url: '/{projectId}/proxy/{containerId}',
+
+                views: {
+
+                    '': {
+                        templateUrl: 'app/proxy/proxy.html',
+                        controller: ['$scope', '$state', '$cookieStore', '$stateParams', 'utils', 'proxyFactory',
+                            function($scope, $state, $cookieStore, $stateParams, utils, proxyFactory) {
+                                console.log('in projects.proxy 2 with proxyId ' + JSON.stringify($stateParams));
+                                if (!$cookieStore.get('cpm_token')) {
+                                    console.log('cpm_token not defined in projects');
+                                    $state.go('login', {
+                                        userId: 'hi'
+                                    });
+                                }
+
+                                if ($stateParams.proxyId != "") {
+                                    proxyFactory.getbycontainerid($stateParams.containerId)
+                                        .success(function(data) {
+                                            $scope.proxy = data;
+                                            console.log('success with proxy get');
+                                            console.log('proxy ' + JSON.stringify($scope.proxy));
+                                        }).error(function(error) {
+                                            $scope.alerts = [{
+                                                type: 'danger',
+                                                msg: error.message
+                                            }];
+                                            console.log('here is an error ' + error.message);
+                                        });
+                                }
+
+                            }
+                        ]
+                    },
+
+                }
+            })
+
+            .state('projects.proxy.details', {
+                url: '/details/:itemId',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/proxy/proxy.detail.html',
+                        controller: ProxyDetailController
+                    },
+                }
+            })
+
+            .state('projects.proxy.schedule', {
+                url: '/schedule/:scheduleID',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/proxy/proxy.schedule.html',
+                        controller: ProxyScheduleController
+                    },
+                }
+            })
+
+            .state('projects.proxy.schedule.edit', {
+                url: '',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/projects/projects.container.schedule.edit.html',
+                        resolve: {
+                            servers: ['serversFactory',
+                                function(serversFactory) {
+                                    console.log('in the resolv of servers');
+                                    serversFactory.all()
+                                        .success(function(data) {
+                                            console.log('successful servers all with data=' + data);
+                                            servers = data;
+                                            return data;
+                                        })
+                                        .error(function(error) {
+                                            $scope.alerts = [{
+                                                type: 'danger',
+                                                msg: error.Error
+                                            }];
+                                            console.log('here is an error ' + error.Error);
+                                        });
+                                }
+                            ]
+                        },
+
+                        controller: ContainerScheduleEditController
+                    },
+                }
+            })
+
+
+            .state('projects.proxy.schedule.history', {
+                url: '/schedule/:scheduleID',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/projects/projects.container.schedule.history.html',
+                        controller: ContainerScheduleHistoryController
+                    },
+                }
+            })
+
+            .state('projects.proxy.schedule.execute', {
+                url: '/schedule/:scheduleID',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/projects/projects.container.schedule.execute.html',
+                        controller: ContainerScheduleExecuteController
+                    },
+                }
+            })
+            .state('projects.proxy.schedule.delete', {
+                url: '/schedule/:schedulID',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/projects/projects.container.schedule.delete.html',
+                        controller: ContainerScheduleDeleteController
+                    },
+                }
+            })
+
+            .state('projects.proxy.scheduleadd', {
+                url: '',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/projects/projects.container.scheduleadd.html',
+                        resolve: {
+                            servers: ['serversFactory',
+                                function(serversFactory) {
+                                    console.log('in the resolv of servers');
+                                    return serversFactory.all();
+                                }
+                            ]
+                        },
+
+                        controller: ProxyScheduleAddController
+                    },
+                }
+            })
+
+
+            .state('projects.proxy.taskschedules', {
+                url: '/taskschedules/:scheduleID',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/proxy/proxy.taskschedules.html',
+                        controller: ProxyTaskSchedulesController
+                    },
+                }
+            })
+            .state('projects.proxy.taskschedules.delete', {
+                url: '/taskschedules/:scheduleID',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/proxy/proxy.taskschedules.delete.html',
+                        controller: ProxyScheduleDeleteController
+                    },
+                }
+            })
+
+            .state('projects.proxy.users', {
+                url: '/users/:itemId',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/proxy/proxy.users.html',
+                        controller: ContainerUsersController
+                    },
+                }
+            })
+
+            .state('projects.proxy.users.edit', {
+                url: '/users/:itemId',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/projects/projects.container.users.edit.html',
+                        controller: ProxyUsersEditController
+                    },
+                }
+            })
+            .state('projects.proxy.users.add', {
+                url: '/users/add/:itemId',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/projects/projects.container.users.add.html',
+                        controller: ProxyUsersAddController
+                    },
+                }
+            })
+
+            .state('projects.proxy.users.delete', {
+                url: '/users/delete/:itemId',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/projects/projects.container.users.delete.html',
+                        controller: ProxyUsersDeleteController
+                    },
+                }
+            })
+
+            .state('projects.proxy.delete', {
+                url: '/delete/:itemId',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/proxy/proxy.delete.html',
+                        controller: ProxyDeleteController
+                    },
+                }
+            })
+
+            .state('projects.proxy.databasesize', {
+                url: '/databasesize/:itemId',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/proxy/proxy.databasesize.html',
+                        controller: ProxyDatabasesizeController
+                    },
+                }
+            })
+
+            .state('projects.proxy.bgwriter', {
+                url: '/bgwriter/:itemId',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/projects/projects.container.monitor.bgwriter.html',
+                        controller: ContainerMonitorbgwriterController
+                    },
+                }
+            })
+            .state('projects.proxy.loadtest', {
+                url: '/loadtest/:itemId',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/projects/projects.container.monitor.loadtest.html',
+                        controller: ContainerMonitorloadtestController
+                    },
+                }
+            })
+            .state('projects.proxy.pgsettings', {
+                url: '/pgsettings/:itemId',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/projects/projects.container.monitor.pgsettings.html',
+                        controller: ContainerMonitorpgsettingsController
+                    },
+                }
+            })
+            .state('projects.proxy.pgstatdatabase', {
+                url: '/pgstatdatabase/:itemId',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/projects/projects.container.monitor.pgstatdatabase.html',
+                        controller: ContainerMonitorpgstatdatabaseController
+                    },
+                }
+            })
+            .state('projects.proxy.pgstatstatements', {
+                url: '/pgstatements/:itemId',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/projects/projects.container.monitor.pgstatstatements.html',
+                        controller: ContainerMonitorpgstatstatementsController
+                    },
+                }
+            })
+
+            .state('projects.proxy.start', {
+                url: '/start/:itemId',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/proxy/proxy.start.html',
+                        controller: ProxyStartController
+                    },
+                }
+            })
+
+            .state('projects.proxy.stop', {
+                url: '/stop/:itemId',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/proxy/proxy.stop.html',
+                        controller: ProxyStopController
+                    },
+                }
+            })
+
+
+            .state('projects.addproxy', {
+                url: '/addproxy/:projectId',
+                views: {
+
+                    '': {
+                        templateUrl: 'app/proxy/proxy.add.html',
+                        controller: ProxyAddController
+                    },
+                }
+            })
+
             .state('projects.detail', {
 
                 url: '/{projectId:[0-9]{1,4}}',
@@ -630,6 +955,27 @@ angular.module('uiRouterSample.projects', [
                         ]
                     },
 
+                }
+            })
+
+            .state('projects.detail.gotocontainer', {
+
+                url: '/{projectId}/container/{containerId}',
+                views: {
+                    '': {
+                        templateUrl: 'app/projects/projects.detail.html',
+                        controller: GotocontainerController
+                    },
+                }
+            })
+            .state('projects.detail.gotoproxy', {
+
+                url: '/{projectId}/container/{containerId}',
+                views: {
+                    '': {
+                        templateUrl: 'app/proxy/proxy.html',
+                        controller: GotoproxyController
+                    },
                 }
             })
 

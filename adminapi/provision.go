@@ -125,6 +125,11 @@ func Provision(w rest.ResponseWriter, r *rest.Request) {
 		return
 	}
 
+	//we have to wait here since the Kube sometimes
+	//is not that fast in setting up the service
+	//for a pod..choosing 10 seconds to wait
+	time.Sleep(10000 * time.Millisecond)
+
 	err = provisionImplInit(dbConn, params, PROFILE, false)
 	if err != nil {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
@@ -173,14 +178,14 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 		logit.Info.Println("Provision:" + err.Error())
 	}
 
-	objectName = params.ContainerName + "-db"
+	objectName = params.ContainerName
 	err = OpenshiftDelete(username, password, objectName, objectType)
 	if err != nil {
 		logit.Info.Println("Provision:" + err.Error())
 	}
 
 	podInfo := template.KubePodParams{
-		NAME:                   params.ContainerName,
+		NAME:                 params.ContainerName,
 		ID:                   params.ContainerName,
 		PODID:                params.ContainerName,
 		CPU:                  params.CPU,
@@ -228,11 +233,19 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 		logit.Info.Println("Provision:" + err.Error())
 	}
 
+	var pgport admindb.Setting
+	pgport, err = admindb.GetSetting(dbConn, "PG-PORT")
+	if err != nil {
+		logit.Error.Println("Provision:PG-PORT setting error " + err.Error())
+		return err
+	}
+
 	//generate the admin service template
 	serviceInfo := template.KubeServiceParams{
 		SERVICENAME: params.ContainerName,
-		NAME: params.ContainerName,
-		PORT: "10001",
+		NAME:        params.ContainerName,
+		PORT:        "10001",
+		DBPORT:      pgport.Value,
 	}
 
 	//create the admin service template
@@ -256,54 +269,11 @@ func provisionImpl(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PROFIL
 		return err
 	}
 
-	//create the admin service
+	//create the service
 	err = OpenshiftCreate(username, password, file.Name())
 	if err != nil {
 		logit.Info.Println("Provision:" + err.Error())
 	}
-
-	var pgport admindb.Setting
-	pgport, err = admindb.GetSetting(dbConn, "PG-PORT")
-	if err != nil {
-		logit.Error.Println("Provision:PG-PORT setting error " + err.Error())
-		return err
-	}
-
-	//generate the db service template
-	var dbServiceParams template.KubeServiceParams
-	dbServiceParams = template.KubeServiceParams{
-		SERVICENAME: params.ContainerName + "-db",
-		NAME: params.ContainerName,
-		PORT: pgport.Value,
-	}
-
-	var dbServiceData []byte
-	dbServiceData, err = template.KubeNodeService(dbServiceParams)
-
-	logit.Info.Println("db service template=" + string(dbServiceData[:]))
-	file, err = ioutil.TempFile("/tmp", "openshift-template")
-	if err != nil {
-		logit.Error.Println("Provision:" + err.Error())
-		return err
-	}
-	defer os.Remove(file.Name())
-
-	err = ioutil.WriteFile(file.Name(), dbServiceData, 0644)
-	if err != nil {
-		logit.Error.Println("Provision:" + err.Error())
-		return err
-	}
-
-	//create the service to the PG port
-	err = OpenshiftCreate(username, password, file.Name())
-	if err != nil {
-		logit.Info.Println("Provision:" + err.Error())
-	}
-
-	//we have to wait here since the Kube sometimes
-	//is not that fast in setting up the service
-	//for a pod..choosing 10 seconds to wait
-	time.Sleep(10000 * time.Millisecond)
 
 	dbnode := admindb.Container{}
 	dbnode.ID = ""
@@ -450,7 +420,7 @@ func provisionImplInit(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PR
 		data, err = template.Postgresql(mode, pgport.Value, "")
 
 		//place postgresql.conf on new node
-		_, err = cpmcontainerapi.RemoteWritefileClient("/pgdata/postgresql.conf", data, fqdn)
+		_, err = cpmcontainerapi.RemoteWritefileClient("/pgdata/"+params.ContainerName+"/postgresql.conf", data, fqdn)
 		if err != nil {
 			logit.Error.Println("Provision:" + err.Error())
 			return err
@@ -463,7 +433,7 @@ func provisionImplInit(dbConn *sql.DB, params *cpmserverapi.DockerRunRequest, PR
 			return err
 		}
 		//place pg_hba.conf on new node
-		_, err = cpmcontainerapi.RemoteWritefileClient("/pgdata/pg_hba.conf", data, fqdn)
+		_, err = cpmcontainerapi.RemoteWritefileClient("/pgdata/"+params.ContainerName+"/pg_hba.conf", data, fqdn)
 		if err != nil {
 			logit.Error.Println("Provision:" + err.Error())
 			return err
@@ -552,9 +522,11 @@ func OpenshiftCreate(username string, password string, templatePath string) erro
 	if err != nil {
 		logit.Error.Println(err.Error())
 		logit.Info.Println(out.String())
+		logit.Info.Println(stderr.String())
 		return err
 	}
 
+	logit.Info.Println(stderr.String())
 	logit.Info.Println(out.String())
 	return err
 }
@@ -576,6 +548,7 @@ func OpenshiftDelete(username string, password string, objectName string, object
 	}
 
 	logit.Info.Println(out.String())
+	logit.Info.Println(stderr.String())
 	return err
 }
 
